@@ -2,8 +2,13 @@
 
 ./pixedit 32 32 (create new 32x32 image)
 
-keybinds
+
+# keybinds
+
 s: save as out.png
+
 q: quit 
+
 m: open color menu
+
 arrow keys: resize canvas
