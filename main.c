@@ -29,15 +29,18 @@ typedef struct {
 	int h;
 	SDL_Surface* pixels;
 	SDL_Texture* texture;
-	double size;
-	int x_offset;
-	int y_offset;
+	float size;
+	float x_offset;
+	float y_offset;
 } Canvas; 
 
 int win_width;
 int win_height;
 
-SDL_Color draw_color = {255,0,0,255};
+//menu.c
+extern SDL_Color colors[];
+
+SDL_Color* draw_color = &colors[1];
 char* output_file_name = "out.png";
 
 Canvas canvas = {0};
@@ -49,8 +52,18 @@ SDL_FRect convert_rect(SDL_Rect r){
 Canvas create_canvas(int x, int y) {
 	Canvas retv={x,y,
 		SDL_CreateSurface(x,y,SDL_PIXELFORMAT_RGBA32),
-		0,60,0,0
+		0,60,20,20
 	};
+	
+	if(win_height/retv.h > win_width/retv.w) {
+		//wide
+		retv.size=((win_width-40)/retv.w);
+		retv.y_offset=(win_height-retv.h*retv.size)/2;
+	} else{
+		retv.size=((win_height-40)/retv.h);
+		retv.x_offset=(win_width-retv.w*canvas.size)/2;
+		//tall 
+	}
 	
 	for(int i=0;i<x*y;i++){
 		((unsigned int*)retv.pixels->pixels)[i]=0xFF0000FF;
@@ -63,15 +76,22 @@ void load_png(char* path){
 		SDL_DestroyTexture(canvas.texture);	
 	if(canvas.pixels)
 		SDL_DestroySurface(canvas.pixels); 
-	
+
 	//TODO change format
 	canvas.pixels=IMG_Load(path);
 	canvas.w=canvas.pixels->w;
 	canvas.h=canvas.pixels->h;
-	//canvas.texture = SDL_CreateTextureFromSurface(rend,canvas.pixels);
-	canvas.size=60;
-	canvas.x_offset=0;
-	canvas.y_offset=0;
+	canvas.x_offset=20;
+	canvas.y_offset=20;
+	if(win_height/canvas.h > win_width/canvas.w) {
+		//wide
+		canvas.size=(((float)win_width-40)/canvas.w);
+		canvas.y_offset=(win_height-canvas.h*canvas.size)/2;
+	} else{
+		canvas.size=(((float)win_height-40)/canvas.h);
+		canvas.x_offset=(win_width-canvas.w*canvas.size)/2;
+		//tall 
+	}
 
 	draw();	
 	output_file_name=path;

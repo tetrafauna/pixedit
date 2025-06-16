@@ -28,7 +28,7 @@ SDL_Rect base_color_rect={0,5,0,0};
 //main.c
 void setColor(SDL_Color c);
 extern int win_width,win_height;
-extern SDL_Color draw_color;
+extern SDL_Color* draw_color;
 SDL_FRect convert_rect(SDL_Rect r);
 
 //draw.c
@@ -62,7 +62,7 @@ void menu_sendclick(SDL_MouseButtonEvent e){
 	int ci = ay/(base_color_rect.h+color_y_step);
 	if(ci >= 9 || ci < 0) 
 		return;
-	draw_color=colors[ci];
+	draw_color=&colors[ci];
 	draw();
 
 }

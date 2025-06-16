@@ -9,9 +9,9 @@ typedef struct {
 	int h;
 	SDL_Surface* pixels;
 	SDL_Texture* texture;
-	double size;
-	int x_offset;
-	int y_offset;
+	float size;
+	float x_offset;
+	float y_offset;
 } Canvas;
 
 extern Canvas canvas;
@@ -41,7 +41,7 @@ int is_menu_focus() {
 int is_mwheel_down = 0;
 
 //main.c
-extern SDL_Color draw_color;
+extern SDL_Color* draw_color;
 
 //draw.c
 extern int x_select;
@@ -71,6 +71,36 @@ void handle_mm_event(SDL_MouseMotionEvent e){
 	
 }
 
+
+
+SDL_Color* get_selected_pixel_pointer() {
+	float x,y;
+	SDL_GetMouseState(&x,&y);
+
+	int ax = x - canvas.x_offset;
+	int ay = y - canvas.y_offset;
+
+	if(ax < 0 || ay < 0)
+		return 0;	
+	
+	int ix = ax/canvas.size;
+	int iy = ay/canvas.size;
+	return &((SDL_Color*) canvas.pixels->pixels)[iy*canvas.w+ix];
+}
+
+void set_selected_pixel(SDL_Color c) {
+	SDL_Color* p = get_selected_pixel_pointer();
+	if(p)
+		*p=c;	
+}
+
+SDL_Color get_selected_pixel() {
+	SDL_Color* p = get_selected_pixel_pointer();
+	if(p)
+		return *p;
+	return *draw_color;
+}
+
 void handle_mb_event(SDL_MouseButtonEvent e) {
 	printf("MOUSE BUTTON!\n");
 	if(e.button == SDL_BUTTON_MIDDLE){
@@ -87,24 +117,7 @@ void handle_mb_event(SDL_MouseButtonEvent e) {
 		 	return;
 		}
 		
-		int ax = e.x - canvas.x_offset;
-		int ay = e.y - canvas.y_offset;
-
-		if(ax < 0 || ay < 0)
-			return;
-		
-		
-		int ix = ax/canvas.size;
-		int iy = ay/canvas.size;
-			
-		printf("%d:%d\n",ix,iy);
-		
-		if(ix >= canvas.w || iy >= canvas.h)
-			return; 
-		
-		printf("%x\n",*(int*)&draw_color);
-		
-		((int*) canvas.pixels->pixels)[iy*canvas.w+ix]=*(int*)&draw_color;
+		set_selected_pixel(*draw_color);
 		SDL_DestroyTexture(canvas.texture);
 		canvas.texture=0;
 		draw(); 
@@ -133,8 +146,8 @@ void handle_mw_event(SDL_MouseWheelEvent e) {
 	int mouse_y;
 	float mx,my;
 	SDL_GetMouseState(&mx,&my);
-	double cx = canvas.x_offset;
-	double cy = canvas.y_offset;
+	float cx = canvas.x_offset;
+	float cy = canvas.y_offset;
 
 	double old_size = canvas.size;
 	
@@ -157,6 +170,10 @@ extern int is_menu_open;
 //main.c
 extern SDL_Window* win;
 void resize_canvas(int dx, int dy);
+extern char* output_file_name;
+
+//user_input.c
+SDL_Color getRGB();
 
 void handle_kb_event(SDL_KeyboardEvent kb) {
 	printf("KEY!%d\n",is_menu_open);
@@ -165,26 +182,32 @@ void handle_kb_event(SDL_KeyboardEvent kb) {
 	switch(kb.key){
 		case SDLK_M:
 			is_menu_open=!is_menu_open;
-			draw();
-			break; 
+			goto draw;
 		case SDLK_Q:
 			do_exit=1;
 			break;
 		case SDLK_S:
-			IMG_SavePNG(canvas.pixels,"out.png");
+			IMG_SavePNG(canvas.pixels,output_file_name);
 			break;
+		case SDLK_C:
+			*draw_color=getRGB();
+			goto draw;
+		case SDLK_P:
+			*draw_color=get_selected_pixel();
+			goto draw;
 		case SDLK_DOWN: 
 			resize_canvas(0,1);		
-			goto keys;
+			goto draw;
 		case SDLK_UP: 
 			resize_canvas(0,-1);		
-			goto keys;
+			goto draw;
 		case SDLK_RIGHT: 
 			resize_canvas(1,0);		
-			goto keys;
+			goto draw;
 		case SDLK_LEFT: 
 			resize_canvas(-1,0);		
-		keys:	
+			goto draw;
+		draw:	
 			draw();
 			break;
 	}		

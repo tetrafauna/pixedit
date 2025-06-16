@@ -12,6 +12,8 @@ extern int win_height;
 
 //user_input.c
 extern SDL_Texture* alph;
+extern SDL_Texture* color_select_texture;
+extern SDL_Surface* color_select_surface;
 
 //draw.c
 extern SDL_Texture* tile_texture; 
@@ -38,16 +40,26 @@ void init(){
 
 	//TODO embed this using ld
 	SDL_Surface* ap = IMG_Load("./textures/alph.png");
-	alph = SDL_CreateTextureFromSurface(rend,ap);
-	SDL_DestroySurface(ap);
+	color_select_surface = IMG_Load("./textures/color_select.png");
+	if(!color_select_surface) {
+		fprintf(stderr,"ERROR LOADING TEXTURE: %s",SDL_GetError());
+	}
 	SDL_Surface* tile_surface = SDL_CreateSurface(2,2,SDL_PIXELFORMAT_RGBA32);
 	((int*)tile_surface->pixels)[0]=0xAAAAAAFF;
 	((int*)tile_surface->pixels)[1]=0x333333FF;
-	((int*)tile_surface->pixels)[3]=0x333333FF;
-	((int*)tile_surface->pixels)[4]=0xAAAAAAFF;
+	((int*)tile_surface->pixels)[2]=0x333333FF;
+	((int*)tile_surface->pixels)[3]=0xAAAAAAFF;
+	
+	alph = SDL_CreateTextureFromSurface(rend,ap);
 	tile_texture=SDL_CreateTextureFromSurface(rend,tile_surface);
+	color_select_texture=SDL_CreateTextureFromSurface(rend,color_select_surface);
+	
 	SDL_SetTextureScaleMode(tile_texture,SDL_SCALEMODE_NEAREST);
+	SDL_SetTextureScaleMode(alph,SDL_SCALEMODE_NEAREST);
+	SDL_SetTextureScaleMode(color_select_texture,SDL_SCALEMODE_NEAREST);
+
 	SDL_DestroySurface(tile_surface);
+	SDL_DestroySurface(ap);
 	
 	SDL_SetRenderDrawColor(rend,255,0,0,255);
 	SDL_RenderClear(rend);
