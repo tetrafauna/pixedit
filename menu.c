@@ -1,4 +1,4 @@
-#include<SDL2/SDL.h>
+#include<SDL3/SDL.h>
 
 extern SDL_Renderer* rend;
 
@@ -7,7 +7,8 @@ int is_menu_open=0;
 int menu_scroll_offset=0;
 
 
-SDL_Color colors[8] = {
+SDL_Color colors[9] = {
+	{0,0,0,0},
 	{255, 0,   0,   255},
 	{0,   255, 0,   255},
 	{0,   0,   255, 255},
@@ -27,6 +28,11 @@ SDL_Rect base_color_rect={0,5,0,0};
 //main.c
 void setColor(SDL_Color c);
 extern int win_width,win_height;
+extern SDL_Color draw_color;
+SDL_FRect convert_rect(SDL_Rect r);
+
+//draw.c
+void draw(); 
 
 void resize_menu(){
 	menu_region.x=0;
@@ -40,7 +46,8 @@ void resize_menu(){
 
 void drawRect(SDL_Rect rect, int bw) {
 	for(int i=0;i<bw;i++){
-		SDL_RenderDrawRect(rend,&rect);
+		SDL_FRect frect = convert_rect(rect);
+		SDL_RenderRect(rend,&frect);
 		rect.x+=1;
 		rect.y+=1;
 		rect.h-=2;
@@ -48,21 +55,31 @@ void drawRect(SDL_Rect rect, int bw) {
 	}	
 }
 
-void menu_sendclick(int x, int y){
-	
+void menu_sendclick(SDL_MouseButtonEvent e){
+	int ay = e.y-base_color_rect.y;	
+	if(ay<0)
+		return;
+	int ci = ay/(base_color_rect.h+color_y_step);
+	if(ci >= 9 || ci < 0) 
+		return;
+	draw_color=colors[ci];
+	draw();
+
 }
 
 void draw_menu() {
 	if(!is_menu_open)
 		return;
-	
+		
 	SDL_SetRenderDrawColor(rend,255,255,255,255);
-	SDL_RenderFillRect(rend,&menu_region);	
+	SDL_FRect mdraw = convert_rect(menu_region);
+	SDL_RenderFillRect(rend,&mdraw);	
 
 	SDL_Rect rect = base_color_rect;
 	for(int i=0;i<sizeof(colors)/sizeof(SDL_Color);i++){
 		setColor(colors[i]);	
-		SDL_RenderFillRect(rend,&rect); 
+		SDL_FRect frect = convert_rect(rect);
+		SDL_RenderFillRect(rend,&frect); 
 		SDL_SetRenderDrawColor(rend,0,0,0,200);
 		drawRect(rect,4);
 		rect.y+=color_y_step+rect.h;

@@ -1,12 +1,14 @@
-#include<SDL2/SDL.h>
+#include<SDL3/SDL.h>
 #include<stdlib.h>
+#include<stdio.h>
 #include<unistd.h>
+#include<SDL3/SDL_image.h>
 
 typedef struct {
 	int w;
 	int h;
 	SDL_Surface* pixels;
-	SDL_Texture* pixels_cache;
+	SDL_Texture* texture;
 	double size;
 	int x_offset;
 	int y_offset;
@@ -23,12 +25,14 @@ extern int do_exit;
 //menu.c
 extern SDL_Rect menu_region;
 extern int is_menu_open;
+extern void menu_sendclick(SDL_MouseButtonEvent e);
 
 int is_menu_focus() {
 	if(is_menu_open){
-		SDL_Rect ml = {0,0,1,1};
-		SDL_GetMouseState(&ml.x,&ml.y);
-		if(SDL_HasIntersection(&ml,&menu_region))
+		float x,y;
+		SDL_GetMouseState(&x,&y);
+		SDL_Rect ml = {(int)x,(int)y,1,1};
+		if(SDL_HasRectIntersection(&ml,&menu_region))
 			return 1;
 	}
 	return 0;
@@ -36,18 +40,41 @@ int is_menu_focus() {
 
 int is_mwheel_down = 0;
 
+//main.c
+extern SDL_Color draw_color;
+
+//draw.c
+extern int x_select;
+extern int y_select; 
+
 void handle_mm_event(SDL_MouseMotionEvent e){ 
 	if(SDL_GetMouseState(0,0) & SDL_BUTTON_MMASK){
 		canvas.x_offset+=e.xrel;
 		canvas.y_offset+=e.yrel;
+		draw();
+		return;
 	}
+	int ax = e.x-canvas.x_offset;
+	int ay = e.y-canvas.y_offset;
+
+	if(ax < 0 || ay < 0) {
+		x_select=-1;
+		y_select=-1;
+		draw();
+		return;
+	}
+
+	y_select = (int) ay / canvas.size;
+	x_select = (int) ax / canvas.size;
+
 	draw();
+	
 }
 
 void handle_mb_event(SDL_MouseButtonEvent e) {
 	printf("MOUSE BUTTON!\n");
 	if(e.button == SDL_BUTTON_MIDDLE){
-		if(e.type=SDL_MOUSEBUTTONDOWN) {
+		if(e.type=SDL_EVENT_MOUSE_BUTTON_DOWN) {
 			is_mwheel_down=1;
 		} else {
 			is_mwheel_down=0;
@@ -55,9 +82,35 @@ void handle_mb_event(SDL_MouseButtonEvent e) {
 	}	
 
 	if(e.button == SDL_BUTTON_LEFT) {
-		if(is_menu_focus()) {
-
+		if(is_menu_focus()) { 
+			menu_sendclick(e);
+		 	return;
 		}
+		
+		int ax = e.x - canvas.x_offset;
+		int ay = e.y - canvas.y_offset;
+
+		if(ax < 0 || ay < 0)
+			return;
+		
+		
+		int ix = ax/canvas.size;
+		int iy = ay/canvas.size;
+			
+		printf("%d:%d\n",ix,iy);
+		
+		if(ix >= canvas.w || iy >= canvas.h)
+			return; 
+		
+		printf("%x\n",*(int*)&draw_color);
+		
+		((int*) canvas.pixels->pixels)[iy*canvas.w+ix]=*(int*)&draw_color;
+		SDL_DestroyTexture(canvas.texture);
+		canvas.texture=0;
+		draw(); 
+		
+
+
 	}
 
 }
@@ -78,11 +131,10 @@ void handle_mw_event(SDL_MouseWheelEvent e) {
 	
 	int mouse_x;
 	int mouse_y;
-	SDL_GetMouseState(&mouse_x,&mouse_y);
+	float mx,my;
+	SDL_GetMouseState(&mx,&my);
 	double cx = canvas.x_offset;
 	double cy = canvas.y_offset;
-	double mx = (double) mouse_x;
-	double my = (double) mouse_y;
 
 	double old_size = canvas.size;
 	
@@ -99,21 +151,42 @@ void handle_mw_event(SDL_MouseWheelEvent e) {
 	draw();
 }
 
+//menu.c 
 extern int is_menu_open;
+
+//main.c
+extern SDL_Window* win;
+void resize_canvas(int dx, int dy);
 
 void handle_kb_event(SDL_KeyboardEvent kb) {
 	printf("KEY!%d\n",is_menu_open);
-	if(kb.type != SDL_KEYDOWN)
+	if(kb.type != SDL_EVENT_KEY_DOWN)
 		return;
-	switch(kb.keysym.sym){
-		case SDLK_m:
+	switch(kb.key){
+		case SDLK_M:
 			is_menu_open=!is_menu_open;
 			draw();
 			break; 
-		case SDLK_q:
+		case SDLK_Q:
 			do_exit=1;
 			break;
-
+		case SDLK_S:
+			IMG_SavePNG(canvas.pixels,"out.png");
+			break;
+		case SDLK_DOWN: 
+			resize_canvas(0,1);		
+			goto keys;
+		case SDLK_UP: 
+			resize_canvas(0,-1);		
+			goto keys;
+		case SDLK_RIGHT: 
+			resize_canvas(1,0);		
+			goto keys;
+		case SDLK_LEFT: 
+			resize_canvas(-1,0);		
+		keys:	
+			draw();
+			break;
 	}		
 }
 
@@ -124,26 +197,25 @@ void input() {
 	SDL_Event e;		
 	while(SDL_PollEvent(&e)) {
 		switch (e.type) {
-			case SDL_QUIT: 
+			case SDL_EVENT_QUIT: 
 				do_exit=1;
 				break;
-			case SDL_MOUSEMOTION:
+			case SDL_EVENT_MOUSE_MOTION:
 				handle_mm_event(e.motion);
 				break;
-			case SDL_MOUSEBUTTONDOWN:
-			case SDL_MOUSEBUTTONUP:
+			case SDL_EVENT_MOUSE_BUTTON_DOWN:
+			case SDL_EVENT_MOUSE_BUTTON_UP:
 				handle_mb_event(e.button); 
 				break;
-			case SDL_MOUSEWHEEL:
+			case SDL_EVENT_MOUSE_WHEEL:
 				handle_mw_event(e.wheel);
 				break;
-			case SDL_KEYDOWN:
-			case SDL_KEYUP:
+			case SDL_EVENT_KEY_DOWN:
+			case SDL_EVENT_KEY_UP:
 				handle_kb_event(e.key);
 				break;
-			case SDL_WINDOWEVENT:
-				if(e.window.event == SDL_WINDOWEVENT_RESIZED)
-					on_resize();
+			case SDL_EVENT_WINDOW_RESIZED:
+				on_resize();
 			default:
 				printf("Event Type: %d\n",e.type); 
 
