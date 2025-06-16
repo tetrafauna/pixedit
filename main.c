@@ -1,6 +1,7 @@
 #include<SDL3/SDL.h>
 #include<SDL3/SDL_image.h>
 #include<stdlib.h>
+#include<stdio.h>
 #include<unistd.h>
 #include<string.h>
 
@@ -61,9 +62,10 @@ Canvas create_canvas(int x, int y) {
 		retv.y_offset=(win_height-retv.h*retv.size)/2;
 	} else{
 		retv.size=((win_height-40)/retv.h);
-		retv.x_offset=(win_width-retv.w*canvas.size)/2;
+		retv.x_offset=((float)win_width-(float)retv.w*retv.size)/2.0;
 		//tall 
 	}
+	printf("X:%f, Y:%f\n",retv.x_offset,retv.y_offset);
 	
 	for(int i=0;i<x*y;i++){
 		((unsigned int*)retv.pixels->pixels)[i]=0xFF0000FF;
@@ -86,10 +88,10 @@ void load_png(char* path){
 	if(win_height/canvas.h > win_width/canvas.w) {
 		//wide
 		canvas.size=(((float)win_width-40)/canvas.w);
-		canvas.y_offset=(win_height-canvas.h*canvas.size)/2;
+		canvas.y_offset=((float)win_height-(float)canvas.h*canvas.size)/2.0;
 	} else{
 		canvas.size=(((float)win_height-40)/canvas.h);
-		canvas.x_offset=(win_width-canvas.w*canvas.size)/2;
+		canvas.x_offset=(((float)win_width)-((float)canvas.w)*canvas.size)/2.0;
 		//tall 
 	}
 

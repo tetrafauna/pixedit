@@ -4,6 +4,8 @@
 //main.c
 extern SDL_Renderer* rend;
 extern SDL_Window* win;
+extern int win_height;
+extern int win_width;
 extern int do_exit;
 extern SDL_Color* draw_color;
 
@@ -23,6 +25,8 @@ int get_num(int max){
 			continue;
 		if(e.key.key == SDLK_Q || e.key.key == SDLK_ESCAPE)
 			return -1;
+		if(e.key.key == SDLK_BACKSPACE)
+			return -2;
 		unsigned int num = e.key.key -'0';
 		if(!(num<=max))
 			continue;
@@ -31,67 +35,144 @@ int get_num(int max){
 }
 
 SDL_Color getRGB() {
-	
-	SDL_Color retv = {0,0,0,0};
+
+
+	SDL_Color retv = {0,0,0,0};	
+
+	scale=((float)win_width-40)/(float)color_select_surface->w;
 
 	SDL_FRect draw_rect = { 
-		10,10,color_select_surface->w*scale,color_select_surface->h*scale
+		20,20,color_select_surface->w*scale,color_select_surface->h*scale
 	};
+	
 	SDL_FRect src_rect  ={
 		0,0,6,7
 	};
-	SDL_RenderTexture(rend,color_select_texture,0,&draw_rect);
+	
+	SDL_Texture* ttex = SDL_CreateTexture(rend,SDL_PIXELFORMAT_RGBA32,
+			SDL_TEXTUREACCESS_TARGET,
+			color_select_surface->w,
+			color_select_surface->h);
+	SDL_SetTextureScaleMode(ttex,SDL_SCALEMODE_NEAREST);
+	
+	SDL_SetRenderTarget(rend,ttex);
+		
+	SDL_RenderTexture(rend,color_select_texture,0,0);
+	SDL_RenderPresent(rend);
+	
+	SDL_SetRenderTarget(rend,0);
+	SDL_RenderTexture(rend,ttex,0,&draw_rect);
 	SDL_RenderPresent(rend);
 
-	draw_rect.x+=2*scale;
-	draw_rect.y+=11*scale;
-	draw_rect.w=6*scale;
-	draw_rect.h=7*scale;
+	SDL_FRect rect; 	
+	rect.x=2;
+	rect.y=11;
+	rect.w=6;
+	rect.h=7;
 	
-	for(int i=0;i<4;i++) {
+	for(int i=0;i<4;i++){
+		
+		rect.x=3+i*25;
+		
+		int max = 2;
 
-		int x = get_num(2);
+		SDL_SetRenderTarget(rend,ttex);
+		
+		SDL_SetRenderDrawColor(rend,255,255,255,255);
+		SDL_RenderFillRect(rend,&rect);
+		rect.x+=7;
+		SDL_RenderFillRect(rend,&rect);
+		rect.x+=7;
+		SDL_RenderFillRect(rend,&rect);
+		SDL_RenderPresent(rend);
+		SDL_SetRenderTarget(rend,0);
+		SDL_RenderTexture(rend,ttex,0,&draw_rect);
+		SDL_RenderPresent(rend);
+	
+		SDL_SetRenderTarget(rend,ttex);
+		
+		rect.x=2+i*25;
+		//fist numer
+		int x = get_num(max);
+		max=9;
+		if(x == 2)
+			max=5;
 		if(x == -1)
 			goto quit;
+		if(x == -2){
+			if(i)i--;
+			i--;
+			continue;
+		}
 		src_rect.x=(26+x)*6; 
-		SDL_RenderTexture(rend,alph,&src_rect,&draw_rect);
+		SDL_RenderTexture(rend,alph,&src_rect,&rect);
 		SDL_RenderPresent(rend);
 		((unsigned char*)&retv)[i]+=x*100;
-		
-		draw_rect.x+=7*scale;	
-		int y;
-		if(x != 2)	
-			y = get_num(9);
-		else
-			y = get_num(5);
-		if(y == -1)
-			goto quit;
-		src_rect.x=(26+y)*6; 
-		SDL_RenderTexture(rend,alph,&src_rect,&draw_rect);
-		SDL_RenderPresent(rend);
-		((unsigned char*)&retv)[i]+=y*10;
-		
-		draw_rect.x+=7*scale;	
-		if(x != 2)	
-			y = get_num(9);
-		else
-			y = get_num(5);
-		if(y == -1)
-			goto quit;
-		src_rect.x=(26+y)*6; 
-		SDL_RenderTexture(rend,alph,&src_rect,&draw_rect);
-		SDL_RenderPresent(rend);
-		((unsigned char*)&retv)[i]+=y*1;
-		draw_rect.x+=11*scale;
-	}
-	
+		rect.x+=7;
 
-	printf("%d:%d:%d:%d\n",retv.r,retv.g,retv.b,retv.a);
+		SDL_SetRenderTarget(rend,0);
+		SDL_RenderTexture(rend,ttex,0,&draw_rect);
+		SDL_RenderPresent(rend);
+		
+	
+		//second numer 
+		SDL_SetRenderTarget(rend,ttex);
+		
+		x = get_num(max);
+		if(x == -1)
+			goto quit;
+		if(x == -2){
+			if(i)i--;
+			i--;
+			continue;
+		}
+		
+		src_rect.x=(26+x)*6; 
+		SDL_RenderTexture(rend,alph,&src_rect,&rect);
+		SDL_RenderPresent(rend);
+		((unsigned char*)&retv)[i]+=x*10;
+		rect.x+=7;
+			
+		SDL_SetRenderTarget(rend,0);
+		SDL_RenderTexture(rend,ttex,0,&draw_rect);
+		SDL_RenderPresent(rend);
+		//third numer
+		SDL_SetRenderTarget(rend,ttex);
+		
+		x = get_num(max);
+		if(x == -1)
+			goto quit;
+		if(x == -2){
+			if(i)i--;
+			i--;
+			continue;
+		}
+		
+		src_rect.x=(26+x)*6; 
+		SDL_RenderTexture(rend,alph,&src_rect,&rect);
+		SDL_RenderPresent(rend);
+		((unsigned char*)&retv)[i]+=x;
+			
+		SDL_SetRenderTarget(rend,0);
+		SDL_RenderTexture(rend,ttex,0,&draw_rect);
+		SDL_RenderPresent(rend);
+
+	}	
+	
+	SDL_SetRenderTarget(rend,0);
+	SDL_RenderTexture(rend,ttex,0,&draw_rect);
+	SDL_RenderPresent(rend);
+	SDL_DestroyTexture(ttex);
+	
+	return retv;
+
 	SDL_Delay(100);
 
 	return retv;
 
 	quit:
+	SDL_SetRenderTarget(rend,0);
+	SDL_DestroyTexture(ttex);
 	return *draw_color;
 }
 

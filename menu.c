@@ -67,6 +67,9 @@ void menu_sendclick(SDL_MouseButtonEvent e){
 
 }
 
+//draw.c
+extern SDL_Texture* tile_texture; 
+
 void draw_menu() {
 	if(!is_menu_open)
 		return;
@@ -79,12 +82,12 @@ void draw_menu() {
 	for(int i=0;i<sizeof(colors)/sizeof(SDL_Color);i++){
 		setColor(colors[i]);	
 		SDL_FRect frect = convert_rect(rect);
+		SDL_RenderTexture(rend,tile_texture,0,&frect);
 		SDL_RenderFillRect(rend,&frect); 
-		SDL_SetRenderDrawColor(rend,0,0,0,200);
+		SDL_SetRenderDrawColor(rend,0,0,0,255);
 		drawRect(rect,4);
 		rect.y+=color_y_step+rect.h;
 		
-	}
-	
+	}	
 }
 

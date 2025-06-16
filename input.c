@@ -47,32 +47,6 @@ extern SDL_Color* draw_color;
 extern int x_select;
 extern int y_select; 
 
-void handle_mm_event(SDL_MouseMotionEvent e){ 
-	if(SDL_GetMouseState(0,0) & SDL_BUTTON_MMASK){
-		canvas.x_offset+=e.xrel;
-		canvas.y_offset+=e.yrel;
-		draw();
-		return;
-	}
-	int ax = e.x-canvas.x_offset;
-	int ay = e.y-canvas.y_offset;
-
-	if(ax < 0 || ay < 0) {
-		x_select=-1;
-		y_select=-1;
-		draw();
-		return;
-	}
-
-	y_select = (int) ay / canvas.size;
-	x_select = (int) ax / canvas.size;
-
-	draw();
-	
-}
-
-
-
 SDL_Color* get_selected_pixel_pointer() {
 	float x,y;
 	SDL_GetMouseState(&x,&y);
@@ -85,6 +59,8 @@ SDL_Color* get_selected_pixel_pointer() {
 	
 	int ix = ax/canvas.size;
 	int iy = ay/canvas.size;
+	if(ix >= canvas.w || iy >= canvas.h)
+		return 0;	
 	return &((SDL_Color*) canvas.pixels->pixels)[iy*canvas.w+ix];
 }
 
@@ -92,6 +68,10 @@ void set_selected_pixel(SDL_Color c) {
 	SDL_Color* p = get_selected_pixel_pointer();
 	if(p)
 		*p=c;	
+	if(canvas.texture) {
+		SDL_DestroyTexture(canvas.texture);
+		canvas.texture=0;
+	}
 }
 
 SDL_Color get_selected_pixel() {
@@ -100,6 +80,42 @@ SDL_Color get_selected_pixel() {
 		return *p;
 	return *draw_color;
 }
+
+void handle_mm_event(SDL_MouseMotionEvent e){ 
+	if(SDL_GetMouseState(0,0) & SDL_BUTTON_MMASK){
+		canvas.x_offset+=e.xrel;
+		canvas.y_offset+=e.yrel;
+		draw();
+		return;
+	}
+
+
+
+	int ax = e.x-canvas.x_offset;
+	int ay = e.y-canvas.y_offset;
+
+	if(ax < 0 || ay < 0) {
+		x_select=-1;
+		y_select=-1;
+		draw();
+		return;
+	}
+
+	y_select = (int) ay / canvas.size;
+	x_select = (int) ax / canvas.size;
+	
+	if(SDL_GetMouseState(0,0) & SDL_BUTTON_LMASK) {
+		SDL_Color spx = get_selected_pixel();
+		if(*(int*)&spx !=*(int*)draw_color) 
+			set_selected_pixel(*draw_color);
+	}
+	
+	draw();
+	
+}
+
+
+
 
 void handle_mb_event(SDL_MouseButtonEvent e) {
 	printf("MOUSE BUTTON!\n");
@@ -118,8 +134,6 @@ void handle_mb_event(SDL_MouseButtonEvent e) {
 		}
 		
 		set_selected_pixel(*draw_color);
-		SDL_DestroyTexture(canvas.texture);
-		canvas.texture=0;
 		draw(); 
 		
 
@@ -239,6 +253,7 @@ void input() {
 				break;
 			case SDL_EVENT_WINDOW_RESIZED:
 				on_resize();
+				draw();
 			default:
 				printf("Event Type: %d\n",e.type); 
 
