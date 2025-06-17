@@ -58,18 +58,16 @@ Canvas create_canvas(int x, int y) {
 	
 	if(win_height/retv.h > win_width/retv.w) {
 		//wide
-		retv.size=((win_width-40)/retv.w);
-		retv.y_offset=(win_height-retv.h*retv.size)/2;
+		retv.size=(((float)win_width-40.0f)/(float)retv.w);
+		retv.y_offset=((float)win_height-(float)retv.h*retv.size)/2.0f;
 	} else{
-		retv.size=((win_height-40)/retv.h);
-		retv.x_offset=((float)win_width-(float)retv.w*retv.size)/2.0;
+		retv.size=(((float)win_height-40.0f)/(float)retv.h);
+		retv.x_offset=((float)win_width-(float)retv.w*retv.size)/2.0f;
 		//tall 
 	}
 	printf("X:%f, Y:%f\n",retv.x_offset,retv.y_offset);
 	
-	for(int i=0;i<x*y;i++){
-		((unsigned int*)retv.pixels->pixels)[i]=0xFF0000FF;
-	}
+	memset(retv.pixels->pixels,0,x*y*4);	
 	return retv;
 }
 
@@ -87,10 +85,10 @@ void load_png(char* path){
 	canvas.y_offset=20;
 	if(win_height/canvas.h > win_width/canvas.w) {
 		//wide
-		canvas.size=(((float)win_width-40)/canvas.w);
+		canvas.size=(((float)win_width-40)/(float)canvas.w);
 		canvas.y_offset=((float)win_height-(float)canvas.h*canvas.size)/2.0;
 	} else{
-		canvas.size=(((float)win_height-40)/canvas.h);
+		canvas.size=(((float)win_height-40)/(float)canvas.h);
 		canvas.x_offset=(((float)win_width)-((float)canvas.w)*canvas.size)/2.0;
 		//tall 
 	}

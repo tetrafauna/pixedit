@@ -50,6 +50,8 @@ extern int y_select;
 SDL_Color* get_selected_pixel_pointer() {
 	float x,y;
 	SDL_GetMouseState(&x,&y);
+	if(is_menu_focus())
+		return;
 
 
 	int ax = x - canvas.x_offset;
@@ -90,8 +92,7 @@ void handle_mm_event(SDL_MouseMotionEvent e){
 		return;
 	}
 
-	if(is_menu_focus())
-		return;
+
 
 	int ax = e.x-canvas.x_offset;
 	int ay = e.y-canvas.y_offset;

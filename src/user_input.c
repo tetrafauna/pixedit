@@ -122,7 +122,6 @@ SDL_Color getRGB() {
 		if(x == -1)
 			goto quit;
 		if(x == -2){
-			if(i)i--;
 			i--;
 			continue;
 		}
@@ -143,7 +142,6 @@ SDL_Color getRGB() {
 		if(x == -1)
 			goto quit;
 		if(x == -2){
-			if(i)i--;
 			i--;
 			continue;
 		}
