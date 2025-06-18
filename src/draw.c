@@ -27,6 +27,12 @@ extern Canvas canvas;
 extern SDL_Window* win;
 extern SDL_Renderer* rend;
 
+//input.c
+extern int brush_size;
+
+//pixels.c
+SDL_Rect get_selected_pixels();
+
 int x_select=-1;
 int y_select=-1;
 
@@ -52,10 +58,11 @@ void draw_canvas() {
 
 	if(x_select >= 0 && x_select < canvas.w && y_select >= 0 && y_select < canvas.h){
 		SDL_SetRenderDrawColor(rend,255,255,255,255);
-		draw_rect.x =canvas.x_offset+x_select*canvas.size;
-		draw_rect.y =canvas.y_offset+y_select*canvas.size;
-		draw_rect.w =canvas.size;
-		draw_rect.h =canvas.size;
+		SDL_Rect rect = get_selected_pixels();
+		draw_rect.x =canvas.x_offset+rect.x*canvas.size;
+		draw_rect.y =canvas.y_offset+rect.y*canvas.size;
+		draw_rect.w =canvas.size*rect.w;
+		draw_rect.h =canvas.size*rect.h;
 		SDL_RenderRect(rend,&draw_rect);
 	}	
 }

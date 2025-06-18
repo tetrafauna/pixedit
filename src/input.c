@@ -21,6 +21,7 @@ void draw();
 
 extern int do_exit;
 
+int brush_size = 1;
 
 //menu.c
 extern SDL_Rect menu_region;
@@ -47,11 +48,7 @@ extern SDL_Color* draw_color;
 extern int x_select;
 extern int y_select; 
 
-SDL_Color* get_selected_pixel_pointer() {
-	float x,y;
-	SDL_GetMouseState(&x,&y);
-
-
+SDL_Color* get_pixel_pointer(int x, int y) {
 	int ax = x - canvas.x_offset;
 	int ay = y - canvas.y_offset;
 
@@ -65,13 +62,60 @@ SDL_Color* get_selected_pixel_pointer() {
 	return &((SDL_Color*) canvas.pixels->pixels)[iy*canvas.w+ix];
 }
 
-void set_selected_pixel(SDL_Color c) {
-	SDL_Color* p = get_selected_pixel_pointer();
-	if(p)
-		*p=c;	
+SDL_Color* get_selected_pixel_pointer() {
+	float x,y;
+	SDL_GetMouseState(&x,&y);
+	return get_pixel_pointer((int)x,(int)y);
+}
+
+void set_pixel(SDL_Color* p, SDL_Color c){
+	if(!p)
+		return;
+	if(*(int*)p == *(int*)&c)
+		return;
+	*p=c;	
 	if(canvas.texture) {
 		SDL_DestroyTexture(canvas.texture);
 		canvas.texture=0;
+	}
+}
+
+void set_selected_pixel(SDL_Color c) {
+	set_pixel(get_selected_pixel_pointer(),c);
+}
+
+void draw_to_pixel(SDL_Color* p){
+	set_pixel(p,*draw_color);
+}
+
+//pixel.c
+SDL_Rect get_selected_pixels();
+
+void draw_to_texture(){
+	
+	SDL_Rect draw_rect = get_selected_pixels();
+
+	int ix = draw_rect.x;
+	int iy = draw_rect.y;
+
+	ix = (ix < 0) ? 0 : ix;
+	iy = (iy < 0) ? 0 : iy;
+
+
+
+	for(int y=0;y<brush_size;y++){
+		int real_iy = iy+y; 
+		if(real_iy>=canvas.h)
+			break;
+		for(int x=0;x<brush_size;x++){
+			int real_ix = ix+x;
+			if(real_ix >= canvas.w)
+				break;
+
+			SDL_Color* pp = &((SDL_Color*)canvas.pixels->pixels)[real_iy*canvas.w+real_ix];
+			draw_to_pixel(pp);
+			
+		}
 	}
 }
 
@@ -89,7 +133,7 @@ void handle_mm_event(SDL_MouseMotionEvent e){
 		draw();
 		return;
 	}
-
+	
 	if(is_menu_focus())
 		return;
 
@@ -105,14 +149,22 @@ void handle_mm_event(SDL_MouseMotionEvent e){
 
 	y_select = (int) ay / canvas.size;
 	x_select = (int) ax / canvas.size;
-	
-	if(SDL_GetMouseState(0,0) & SDL_BUTTON_LMASK) {
-		SDL_Color spx = get_selected_pixel();
-		if(*(int*)&spx !=*(int*)draw_color) 
-			set_selected_pixel(*draw_color);
+
+	if(brush_size%2 == 1){
+		x_select-=brush_size/2;
+		y_select-=brush_size/2;
 	}
-	
+	x_select = (x_select < 0) ? 0 : x_select;
+	y_select = (y_select < 0) ? 0 : y_select;
+
+	if(SDL_GetMouseState(0,0) & SDL_BUTTON_LMASK){
+		draw_to_texture();
+		draw();
+	}
 	draw();
+
+	
+		
 	
 }
 
@@ -135,11 +187,9 @@ void handle_mb_event(SDL_MouseButtonEvent e) {
 		 	return;
 		}
 		
-		set_selected_pixel(*draw_color);
+		//set_selected_pixel(*draw_color);
+		draw_to_texture();
 		draw(); 
-		
-
-
 	}
 
 }
@@ -222,6 +272,14 @@ void handle_kb_event(SDL_KeyboardEvent kb) {
 			goto draw;
 		case SDLK_LEFT: 
 			resize_canvas(-1,0);		
+			goto draw;
+		case SDLK_EQUALS:
+			brush_size++;
+			goto draw;
+		case SDLK_MINUS:
+			brush_size--;
+			if(!brush_size)
+				brush_size=1;
 			goto draw;
 		draw:	
 			draw();

@@ -9,7 +9,7 @@ ld -r -b binary textures/color_picker.png -o color_picker.o
 
 #gcc -c src/*.c
 
-gcc -g ./src/*.c ./*.o -o pixedit -lSDL3 -lSDL3_image
+gcc -g ./src/*.c ./*.o -o pixedit -lSDL3 -lSDL3_image -lm
 
 rm *.o
 
