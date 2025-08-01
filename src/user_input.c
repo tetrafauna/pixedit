@@ -119,6 +119,8 @@ SDL_Color getRGB() {
 		SDL_SetRenderTarget(rend,ttex);
 		
 		x = get_num(max);
+		if(x != 5)
+			max = 9;
 		if(x == -1)
 			goto quit;
 		if(x == -2){
